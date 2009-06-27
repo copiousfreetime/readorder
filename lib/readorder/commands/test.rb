@@ -86,7 +86,8 @@ module Readorder
         @filelist = nil
         sublist = sample_from( self.filelist ) 
         results = test_using_sublist( sublist )
-        output.puts "Test Using Random Sample"
+        output.puts "Test Using Random Sample".center(72)
+        output.puts "=" * 72
         report_results( results )
 
       end
@@ -102,7 +103,8 @@ module Readorder
         @filelist = nil
         sublist = first_of( self.filelist ) 
         results = test_using_sublist( sublist )
-        output.puts "Test Using First Of"
+        output.puts "Test Using First Of".center(72)
+        output.puts "=" * 72
         report_results( results )
       end
 
@@ -136,7 +138,6 @@ module Readorder
       # Write the report of the timings to output
       #
       def report_results( timings )
-        output.puts "Summary of files read"
         t = timings.first
         output.puts 
         output.puts "  Total files read : #{"%12d" % t.value_stats.count}"
@@ -146,18 +147,17 @@ module Readorder
         output.puts "  Maximum filesize : #{"%12d" % t.value_stats.max}"
         output.puts "  Stddev of sizes  : #{"%16.3f" % t.value_stats.stddev}"
         output.puts
-        output.puts "Comparison of read orders"
-        output.puts
 
-        output.puts ["%28s" % "order", "%20s" % "Elapsed time (sec)", "%22s" % "Read rate (bytes/sec)" ].join(" ")
+        output.puts ["%28s" % "read order", "%20s" % "Elapsed time (sec)", "%22s" % "Read rate (bytes/sec)" ].join(" ")
         output.puts "-" * 72
         timings.each do |timing|
           p = [ ]
-          p << "%30s" % timing.name
+          p << "%28s" % timing.name
           p << "%20.3f" % timing.timed_stats.sum
-          p << "%20.3f" % timing.rate
+          p << "%22.3f" % timing.rate
           output.puts p.join(" ")
         end
+        output.puts
       end
       #
       # 
