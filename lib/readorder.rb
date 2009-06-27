@@ -3,8 +3,15 @@
 # All rights reserved.  See LICENSE and/or COPYING for details.
 #++
 
+#
+# Take a look in the README and the Analyzer and Datum classes.  That is where
+# all the real work is done.
+#
 module Readorder
-  class Error < StandardError; end
+  #
+  # root Error class for Readorder
+  # 
+  class Error < StandardError; end 
 end
 
 require 'rubygems'

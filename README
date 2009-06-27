@@ -24,10 +24,94 @@ The output order of the filenames can either be in inode order or
 physical disc block order.  This is dependent upon operating system
 support and permission level of the user running readorder.
 
+== COMMANDS
+
+=== Sort
+
+Given a list of filenames, either on the command line or via stdin,
+output the filenames in an order that should increase the I/O 
+throughput when the contents files are read from disc.
+
+==== Synopsis
+
+  readorder sort [filelist*] [options]+
+
+  filelist (-1 ~> filelist=#<IO:0x1277e4>) 
+      The files containing filenames 
+  --inode 
+      Only use inode order do not attempt physical block order 
+  --log-level=log-level (0 ~> log-level=info) 
+      The verbosity of logging, one of [ debug, info, warn, error, fatal ] 
+  --log-file=log-file (0 ~> log-file) 
+      Log to this file instead of stderr 
+  --output=output (0 ~> output) 
+      Where to write the output 
+  --error-filelist=error-filelist (0 ~> error-filelist) 
+      Write all the files from the filelist that had errors to this file 
+  --help, -h 
+
+==== Example Output
+
+=== Analyze
+
+Take the list of filenames and output an analysis of the volume of
+data in those files.
+
+==== Synopsis
+
+  readorder analyze [filelist*] [options]+
+
+  filelist (-1 ~> filelist=#<IO:0x1277e4>) 
+      The files containing filenames 
+  --log-level=log-level (0 ~> log-level=info) 
+      The verbosity of logging, one of [ debug, info, warn, error, fatal ] 
+  --log-file=log-file (0 ~> log-file) 
+      Log to this file instead of stderr 
+  --output=output (0 ~> output) 
+      Where to write the output 
+  --error-filelist=error-filelist (0 ~> error-filelist) 
+      Write all the files from the filelist that had errors to this file 
+  --data-csv=data-csv (0 ~> data-csv) 
+      Write the raw data collected to this csv file 
+  --help, -h 
+
+==== Example Output
+
+=== Test
+
+Give a list of filenames, either on the commandline or via stdin, 
+take a random subsample of them and read all the contents of those
+files in different orders.
+  
+* in initial given order
+* in inode order
+* in physical block order
+  
+Output a report of the various times take to read the files.
+  
+This command requires elevated priveleges to run and will spike the 
+I/O of your machine.  Run with care.
+
+==== Synopsis
+
+  readorder test [filelist*] [options]+
+
+  filelist (-1 ~> filelist=#<IO:0x1277e4>) 
+      The files containing filenames 
+  --percentage=percentage (0 ~> int(percentage)) 
+      What random percentage of input files to select 
+  --log-level=log-level (0 ~> log-level=info) 
+      The verbosity of logging, one of [ debug, info, warn, error, fatal ] 
+  --log-file=log-file (0 ~> log-file) 
+      Log to this file instead of stderr 
+  --error-filelist=error-filelist (0 ~> error-filelist) 
+      Write all the files from the filelist that had errors to this file 
+  --help, -h 
+
 == CREDITS
 
- * Linux System Programming by Robert Love
- * {readahead project}[https://fedorahosted.org/readahead/]
+* Linux System Programming by Robert Love
+* {readahead project}[https://fedorahosted.org/readahead/]
 
 == ISC LICENSE
 

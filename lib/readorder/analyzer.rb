@@ -8,13 +8,16 @@ module Readorder
   # appropriate Datum instances
   #
   class Analyzer
+    # an Array of Datum instances for files that cannot be processed
+    attr_accessor :bad_data
+
+    # an RBTree of Datum instances of those files that were analyzed
+    attr_accessor :good_data
+
     #
     # Initialize the Analyzer with the Filelist object and whether or
     # not to gather the physical block size.
     #
-    attr_accessor :bad_data
-    attr_accessor :good_data
-
     def initialize( filelist, get_physical = true )
       @filelist = filelist
       @good_data = ::MultiRBTree.new
@@ -24,10 +27,24 @@ module Readorder
       @time_metric = ::Hitimes::TimedMetric.new( 'time' )
     end
 
+    # 
+    # call-seq:
+    #   analyzer.logger -> Logger
+    #   
+    # return the Logger instance for the Analyzer
+    #
     def logger
       ::Logging::Logger[self]
     end
 
+    # 
+    # call-seq:
+    #   analyzer.collect_data -> nil
+    #
+    # Run data collections over the Filelist and store the results into
+    # *good_data* or *bad_data* as appropriate.  A status message is written to the
+    # log every 10,000 files processed
+    #
     def collect_data
       logger.info "Begin data collection"
       @filelist.each_line do |fname|
@@ -55,12 +72,25 @@ module Readorder
       nil
     end
 
+    #
+    # call-seq:
+    #   analyzer.log_summary_report -> nil
+    #
+    # Write the summary report to the #logger
+    #
     def log_summary_report
       summary_report.split("\n").each do |l|
         logger.info l
       end
     end
 
+    # 
+    # call-seq: 
+    #   analyzer.summary_report -> String
+    #
+    # Generate a summary report of how long it took to analyze the files and the
+    # filesizes found.  return it as a String
+    #
     def summary_report
       s = StringIO.new
       s.puts "Files analyzed   : #{"%12d" % @time_metric.count}"
@@ -75,6 +105,16 @@ module Readorder
       return s.string
     end
 
+    #
+    # call-seq:
+    #   analyzer.dump_data_to( IO ) -> nil
+    #
+    # write a csv to the _IO_ object passed in.  The format is:
+    #
+    #   error reason,filename
+    #
+    # If there are no bad Datum instances then do not write anything.
+    #
     def dump_bad_data_to( io )
       if bad_data.size > 0 then
         io.puts "error_reason,filename"
@@ -82,9 +122,21 @@ module Readorder
           io.puts "#{d.error_reason},#{d.filename}"
         end
       end
+      nil
     end
 
 
+    # 
+    # call-seq:
+    #   analyzer.dump_good_data_to( IO ) -> nil
+    #
+    # Write a csv fo the _IO_ object passed in.  The format is:
+    #
+    #   filename,size,inode_number,block_count,first_physical_block_number
+    #
+    # The last two fields *block_count* and *first_physical_block_number* are
+    # only written if the analyzer was able to gather physical block information
+    #
     def dump_good_data_to( io )
       fields = %w[ filename size inode_number ]
       if @get_physical then
