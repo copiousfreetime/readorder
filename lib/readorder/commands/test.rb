@@ -37,7 +37,7 @@ module Readorder
         logger.info "gathering the first #{percentage}% of the data"
         lines = []
         data.each_line { |l| lines << l.strip }
-        max_index = ( data.size.to_f * ( percentage.to_f / 100.0  ) ).ceil
+        max_index = ( lines.size.to_f * ( percentage.to_f / 100.0  ) ).ceil
         subset = lines[0..max_index]
         return Filelist.new( StringIO.new( subset.join("\n") ) )
       end
