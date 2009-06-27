@@ -54,7 +54,7 @@ module Readorder
       # Part of the Command lifecycle.
       #
       def run
-        sub_list_io = sample_from( self.file_list ) 
+        sub_list_io = sample_from( self.filelist ) 
         @analyzer = Analyzer.new( Filelist.new( sub_list_io ) )
         @analyzer.collect_data
         results = []
