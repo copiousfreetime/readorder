@@ -88,6 +88,7 @@ module Readorder
       }
       mixin :option_log_level
       mixin :option_log_file
+      mixin :option_output
       mixin :argument_filelist
       mixin :option_error_filelist
 

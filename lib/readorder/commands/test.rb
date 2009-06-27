@@ -1,3 +1,4 @@
+require 'stringio'
 module Readorder
   module Commands
     #
@@ -32,12 +33,18 @@ module Readorder
       # option.
       #
       def sample_data( data )
-        logger.info "collecting the first #{options['percentage']}% of #{analyzer.good_data.size} items"
+        logger.info "collecting #{options['percentage']}% of the data"
         samples = []
+        total = 0
         percentage = options['percentage']
-        max_index = ( analyzer.good_data.size * ( percentage.to_f / 100.0 ) ).ceil
-        samples = analyzer.good_data[0..max_index]
-        return samples
+        data.each_line do |l|
+          total += 1
+          if rand( 100 ) < percentage then
+            samples << l
+          end
+        end
+        logger.info "sampled #{samples.size} of #{total}"
+        return StringIO.new( samples.join("\n") )
       end
 
       #
@@ -47,8 +54,9 @@ module Readorder
       # Part of the Command lifecycle.
       #
       def run
-        analyzer.collect_data
-        samples = sample_data( analyzer.good_data )
+        sub_list_io = sample_from( self.file_list ) 
+        @analyzer = Analyzer.new( Filelist.new( sub_list_io ) )
+        @analyzer.collect_data
         results = []
 
         %w[ original_order inode_number first_physical_block_number ].each do |order|
