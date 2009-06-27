@@ -31,12 +31,6 @@ module Readorder
         cast :boolean
       }
 
-      #option( 'split-dir' ) {
-      #  description "Directory to store filenames by device.  It must already exist."
-      #  argument :required
-      #  validate { |d| File.directory?( d ) }
-      #}
-
       mixin :option_log_level
       mixin :option_log_file
       mixin :argument_filelist

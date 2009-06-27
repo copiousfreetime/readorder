@@ -8,7 +8,9 @@ module Readorder
     def run
       analyzer.collect_data
       analyzer.log_summary_report
-      analyzer.good_data
+      analyzer.good_data.values.each do |d|
+        output.puts d.filename
+      end
     end
   end
 end
