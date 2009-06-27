@@ -27,12 +27,12 @@ module Readorder
 
       #
       # call-seq: 
-      #   test.sample_data -> Array of Datum
+      #   test.sample_from( Filelist -> StringIO
       #
-      # Take a subset of the whole data collected based upon the percentage
-      # option.
+      # Take a subset of the whole potential data collected based upon the percentage
+      # option. Return a new IO object that can be passed to another Filelist.
       #
-      def sample_data( data )
+      def sample_from( data )
         logger.info "collecting #{options['percentage']}% of the data"
         samples = []
         total = 0
