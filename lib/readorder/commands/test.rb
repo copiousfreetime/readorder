@@ -25,15 +25,33 @@ module Readorder
         end
       end
 
+      # 
+      # call-seq:
+      #   test.first_of( Filelist ) -> Filelist
+      #
+      # Use the *percentage* option to take the first *percentage* of the input
+      # Filelist and return a new Filelist object continaing that subjset.
+      #
+      def first_of( data ) 
+        percentage = options['percentage']
+        logger.info "gathering the first #{percentage}% of the data"
+        lines = []
+        data.each_line { |l| lines << l.strip }
+        max_index = ( data.size.to_f * ( percentage.to_f / 100.0  ) ).ceil
+        subset = lines[0..max_index]
+        return Filelist.new( StringIO.new( subset.join("\n") ) )
+      end
+
       #
       # call-seq: 
-      #   test.sample_from( Filelist -> StringIO
+      #   test.sample_from( Filelist ) -> Filelist
       #
-      # Take a subset of the whole potential data collected based upon the percentage
-      # option. Return a new IO object that can be passed to another Filelist.
+      # Use the *percentage* option to take a random subsampling of data from
+      # the input Filelist and return an new Filelist object containing that
+      # subset.
       #
       def sample_from( data )
-        logger.info "collecting #{options['percentage']}% of the data"
+        logger.info "sampling a random #{options['percentage']}% of the data"
         samples = []
         total = 0
         percentage = options['percentage']
@@ -44,7 +62,7 @@ module Readorder
           end
         end
         logger.info "sampled #{samples.size} of #{total}"
-        return StringIO.new( samples.join("\n") )
+        return Filelist.new( StringIO.new( samples.join("\n") ) )
       end
 
       #
@@ -54,8 +72,46 @@ module Readorder
       # Part of the Command lifecycle.
       #
       def run
-        sub_list_io = sample_from( self.filelist ) 
-        analyzer = Analyzer.new( Filelist.new( sub_list_io ) )
+        test_using_random_sample
+        test_using_first_of
+      end
+
+      #
+      # call-seq:
+      #   test.test_using_random_sample
+      #
+      # Run the full test using a random subsample of the original Filelist
+      #
+      def test_using_random_sample
+        sublist = sample_from( self.filelist ) 
+        results = test_using_sublist( sublist )
+        output.puts "Test Using Random Sample"
+        report_results( results )
+
+      end
+
+      #
+      # call-seq:
+      #   test.test_using_first_of
+      #
+      # Run the full test using a the first *percentage* of the original
+      # Filelist
+      #
+      def test_using_first_of
+        sublist = first_of( self.filelist ) 
+        results = test_using_sublist( sublist )
+        output.puts "Test Using First Of"
+        report_results( results )
+      end
+
+      #
+      # call-seq:
+      #   test.test_using_sublist( Filelist ) -> Array of TimedValueMetric
+      #
+      # given a Filielist of messages run the whole test on them all
+      #
+      def test_using_sublist( sublist )
+        analyzer = Analyzer.new( sublist )
         analyzer.collect_data
         results = []
 
@@ -68,8 +124,7 @@ module Readorder
           end
           results << run_test( order, tree.values )
         end
-
-        report_results( results )
+        return results
       end
 
       # 
