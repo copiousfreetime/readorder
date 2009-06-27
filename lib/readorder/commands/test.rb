@@ -54,10 +54,10 @@ module Readorder
         logger.info "sampling a random #{options['percentage']}% of the data"
         samples = []
         total = 0
-        percentage = options['percentage']
+        fraction = options['percentage'] / 100.0
         data.each_line do |l|
           total += 1
-          if rand( 100 ) < percentage then
+          if rand < fraction
             samples << l.strip
           end
         end
