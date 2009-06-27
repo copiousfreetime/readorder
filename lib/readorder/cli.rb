@@ -81,10 +81,10 @@ module Readorder
         argument :required
         default "10"
         validate { |p| 
-          pi = Float(p).to_i
+          pi = Float(p)
           (pi > 0) and (pi <= 100)
         }
-        cast :int
+        cast :float
       }
       mixin :option_log_level
       mixin :option_log_file
