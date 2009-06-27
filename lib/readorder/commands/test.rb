@@ -7,6 +7,13 @@ module Readorder
     #
     class Test < ::Readorder::Command
 
+      # 
+      # call-seq:
+      #   test.before -> nil
+      #
+      # Part of the Command lifecycle.  In the Test command this make sure we
+      # are on a Linux machine and running as root.
+      #
       def before
         super
         if not Datum.is_linux? then
@@ -17,20 +24,28 @@ module Readorder
         end
       end
 
+      #
+      # call-seq: 
+      #   test.sample_data -> Array of Datum
+      #
+      # Take a subset of the whole data collected based upon the percentage
+      # option.
+      #
       def sample_data( data )
-        logger.info "randomly collecting #{options['percentage']}% of #{analyzer.good_data.size} items"
+        logger.info "collecting the first #{options['percentage']}% of #{analyzer.good_data.size} items"
         samples = []
         percentage = options['percentage']
-
-        data.each do |d|
-          if rand(100) < percentage then
-            samples << d
-          end
-        end
-
+        max_index = ( analyzer.good_data.size * ( percentage.to_f / 100.0 ) ).ceil
+        samples = analyzer.good_data[0..max_index]
         return samples
       end
 
+      #
+      # call-seq:
+      #   test.run -> nil
+      #
+      # Part of the Command lifecycle.
+      #
       def run
         analyzer.collect_data
         samples = sample_data( analyzer.good_data )
@@ -45,8 +60,41 @@ module Readorder
           end
           results << run_test( order, tree.values )
         end
+
+        report_results( results )
       end
 
+      # 
+      # call-seq:
+      #   test.report_results( results ) -> nil
+      #
+      # Write the report of the timings to output
+      #
+      def report_results( timings )
+        output.puts "Summary of files read"
+        t = timings.first
+        output.puts 
+        output.puts "  Total files read : #{"%12d" % t.value_stats.count}"
+        output.puts "  Total bytes read : #{"%12d" % t.value_stats.sum}"
+        output.puts "  Minimum filesize : #{"%12d" % t.value_stats.min}"
+        output.puts "  Average filesize : #{"%16.3f" % t.value_stats.mean}"
+        output.puts "  Maximum filesize : #{"%12d" % t.value_stats.max}"
+        output.puts "  Stddev of sizes  : #{"%16.3f" % t.value_stats.stddev}"
+        output.puts
+        output.puts "Comparison of read orders"
+        output.puts
+
+        output.puts ["%28s" % "order", "%20s" % "Elapsed time (sec)", "%22s" % "Read rate (bytes/sec)" ].join(" ")
+        output.puts "-" * 72
+        timings.each do |timing|
+          p = [ ]
+          p << "%30s" % timing.name
+          p << "%20.3f" % timing.timed_stats.sum
+          p << "%20.3f" % timing.rate
+          output.puts p.join(" ")
+        end
+      end
+      #
       # 
       # call-seq:
       #   test.run_test( 'original', [ Datum, Dataum, ... ]) -> Hitimes::TimedValueMetric
@@ -59,18 +107,18 @@ module Readorder
         logger.info "running #{test_name} test on #{data.size} files"
         self.drop_caches
         timer = ::Hitimes::TimedValueMetric.new( test_name )
-        logger.info "begin test"
+        logger.info "  begin test"
         data.each do |d|
           timer.start
-          bytes = dump_to_dev_null( data )
+          bytes = dump_to_dev_null( d )
           timer.stop( bytes )
 
-          if timer.count % 10_000 == 0 then
+          if timer.timed_stats.count % 10_000 == 0 then
             logger.info "  processed #{timer.count} at #{"%0.3f" % timer.rate} bytes/sec"
           end
         end
-        logger.info "end test"
-        logger.info "processed #{timer.count} at #{"%0.3f" % timer.rate} bytes/sec"
+        logger.info "  end test"
+        logger.info "  processed #{timer.timed_stats.count} at #{"%0.3f" % timer.rate} bytes/sec"
         return timer
       end
 
@@ -84,7 +132,7 @@ module Readorder
       #
       def drop_caches
         # old habits die hard
-        logging.info "dropping caches"
+        logger.info "  dropping caches"
         3.times { %x[ /bin/sync ] }
         File.open( "/proc/sys/vm/drop_caches", "w" ) do |f|
           f.puts 3
@@ -102,7 +150,7 @@ module Readorder
         bytes = 0
         File.open( "/dev/null", "w+" ) do |writer|
           File.open( datum.filename, "r") do |reader|
-            chunk_size = datum.stat.blocksize || 4096 
+            chunk_size = datum.stat.blksize || 4096 
             buf = String.new  
             loop do
               begin

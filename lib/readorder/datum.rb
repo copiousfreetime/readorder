@@ -110,7 +110,7 @@ module Readorder
           end
         rescue => e
           @error_reason = e.to_s
-          logger.warn e
+          logger.warn e.to_s
           @valid = false
         ensure
           @collected = true

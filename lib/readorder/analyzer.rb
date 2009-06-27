@@ -82,6 +82,7 @@ module Readorder
         end
         original_order += 1
       end
+      logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec"
       logger.info "End data collection" 
       nil
     end
@@ -146,20 +147,20 @@ module Readorder
     #
     # Write a csv fo the _IO_ object passed in.  The format is:
     #
-    #   filename,size,inode_number,block_count,first_physical_block_number
+    #   filename,size,inode_number,physical_block_count,first_physical_block_number
     #
-    # The last two fields *block_count* and *first_physical_block_number* are
+    # The last two fields *physical_block_count* and *first_physical_block_number* are
     # only written if the analyzer was able to gather physical block information
     #
     def dump_good_data_to( io )
       fields = %w[ filename size inode_number ]
       if @get_physical then
-        fields << 'block_count'
+        fields << 'physical_block_count'
         fields << 'first_physical_block_number'
       end
 
       io.puts fields.join(",")
-      good_data.values.each do |d|
+      good_data.each do |d|
         f = fields.collect { |f| d.send( f ) }
         io.puts f.join(",")
       end

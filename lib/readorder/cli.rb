@@ -79,6 +79,7 @@ module Readorder
       option( :percentage ) {
         description "What random percentage of input files to select"
         argument :required
+        default "10"
         validate { |p| 
           pi = Float(p).to_i
           (pi > 0) and (pi <= 100)

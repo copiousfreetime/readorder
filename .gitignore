@@ -1,4 +1,6 @@
 *~
+*.swp
 pkg/
 coverage/
 doc/
+tmp/
