@@ -40,7 +40,7 @@ module Readorder
         data.each_line do |l|
           total += 1
           if rand( 100 ) < percentage then
-            samples << l
+            samples << l.strip
           end
         end
         logger.info "sampled #{samples.size} of #{total}"
