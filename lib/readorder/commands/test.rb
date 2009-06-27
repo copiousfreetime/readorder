@@ -83,6 +83,7 @@ module Readorder
       # Run the full test using a random subsample of the original Filelist
       #
       def test_using_random_sample
+        @filelist = nil
         sublist = sample_from( self.filelist ) 
         results = test_using_sublist( sublist )
         output.puts "Test Using Random Sample"
@@ -98,6 +99,7 @@ module Readorder
       # Filelist
       #
       def test_using_first_of
+        @filelist = nil
         sublist = first_of( self.filelist ) 
         results = test_using_sublist( sublist )
         output.puts "Test Using First Of"
