@@ -9,7 +9,14 @@ module Readorder
       def run
         analyzer.collect_data
         analyzer.log_summary_report
-        data = get_physical? ? analyzer.physical_order : analyzer.inode_order
+        data = nil
+        if get_physical? then
+          logger.info "using physical order"
+          data = analyzer.physical_order
+        else
+          logger.info "using inode order"
+          data = analyzer.inode_order
+        end
         data.values.each do |d|
           output.puts d.filename
         end
