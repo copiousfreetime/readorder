@@ -1,2 +1,3 @@
+- test command
 - add in the ability to lower the priority of the readorder process
 - split up items by mountpoint or device
