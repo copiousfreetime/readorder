@@ -60,7 +60,7 @@ module Readorder
       logger.info "Begin data collection"
       original_order = 0
       @filelist.each_line do |fname|
-        #logger.debug "  analyzing #{fname.strip}"
+        logger.debug "  analyzing #{fname.strip}"
         @time_metric.measure do
           d = Datum.new( fname )
           d.collect( @get_physical )
@@ -83,6 +83,7 @@ module Readorder
         original_order += 1
       end
       logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec"
+      logger.info "  yielded #{@good_data.size} data points"
       logger.info "End data collection" 
       nil
     end

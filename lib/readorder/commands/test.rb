@@ -55,14 +55,14 @@ module Readorder
       #
       def run
         sub_list_io = sample_from( self.filelist ) 
-        @analyzer = Analyzer.new( Filelist.new( sub_list_io ) )
-        @analyzer.collect_data
+        analyzer = Analyzer.new( Filelist.new( sub_list_io ) )
+        analyzer.collect_data
         results = []
 
         %w[ original_order inode_number first_physical_block_number ].each do |order|
-          logger.info "ordering #{samples.size} samples by #{order}"
+          logger.info "ordering #{analyzer.good_data.size} samples by #{order}"
           tree = ::MultiRBTree.new
-          samples.each do |s|
+          analyzer.good_data.each do |s|
             rank = s.send( order )
             tree[rank] = s
           end
