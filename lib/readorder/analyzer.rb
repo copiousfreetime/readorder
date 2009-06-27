@@ -60,7 +60,7 @@ module Readorder
       logger.info "Begin data collection"
       original_order = 0
       @filelist.each_line do |fname|
-        logger.debug "  analyzing #{fname.strip}"
+        #logger.debug "  analyzing #{fname.strip}"
         @time_metric.measure do
           d = Datum.new( fname )
           d.collect( @get_physical )
