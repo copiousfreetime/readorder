@@ -8,4 +8,4 @@
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__),"..","lib"))
 require 'readorder'
 
-puts "I am the killer app readorder at version #{Readorder::VERSION}!"
+::Readorder::Cli.new( ARGV, ENV ).run

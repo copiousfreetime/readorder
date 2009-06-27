@@ -11,11 +11,11 @@ Configuration.for('project') {
   version       Readorder::Version.to_s 
   author        "Jeremy Hinegardner"
   email         "jeremy@copiousfreetime.org"
-  homepage      "http://readorder.rubyforge.org/"
+  homepage      "http://copiousfreetime.rubyforge.org/readorder"
   description   Utils.section_of("README", "description")
   summary       description.split(".").first
   history       "HISTORY"
-  license       FileList["LICENSE", "COPYING"]
+  license       FileList["LICENSE"]
   readme        "README"
 }
 
@@ -98,10 +98,10 @@ Configuration.for('extension') {
 # Rubyforge 
 #-----------------------------------------------------------------------
 Configuration.for('rubyforge') {
-  project       "FIXME: rubyforge project"
-  user          "FIXME: username"
+  project       "copiousfreetime"
+  user          "jjh"
   host          "rubyforge.org"
-  rdoc_location "#{user}@#{host}:/var/www/gforge-projects/#{project}"
+  rdoc_location "#{user}@#{host}:/var/www/gforge-projects/copiousfreetime/#{project}"
 }
 
 
