@@ -26,6 +26,9 @@ module Readorder
     # count of the number of physical disc blocks this file consumes.  This is
     # only gathered if the *first_physical_block_number* is also gathered.
     attr_reader :physical_block_count
+
+    # the original order in which the Datum was collected
+    attr_accessor :original_order
    
     # Check if we are running on linux.  We use this to enable 
     # us to check the physical block id.
@@ -45,6 +48,7 @@ module Readorder
       @first_physical_block_number = nil
       @physical_block_count = 0
       @error_reason = nil
+      @original_order = 0
       
       @stat = nil
       @valid = false

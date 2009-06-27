@@ -11,20 +11,31 @@ module Readorder
     # an Array of Datum instances for files that cannot be processed
     attr_accessor :bad_data
 
-    # an RBTree of Datum instances of those files that were analyzed
+    # an Array of Datum instances in the order they were processed
     attr_accessor :good_data
+
+    # an RBTree of Datum instances of those files that were analyzed
+    # in order by phyiscal disc block number.  This only has items if 
+    # the physical block number was obtained.  It is empty otherwise
+    attr_accessor :physical_order
+
+    # an RBTree of Datum instances of those files that were analyzed
+    # in order by inode
+    attr_accessor :inode_order
 
     #
     # Initialize the Analyzer with the Filelist object and whether or
     # not to gather the physical block size.
     #
     def initialize( filelist, get_physical = true )
-      @filelist = filelist
-      @good_data = ::MultiRBTree.new
-      @bad_data = []
-      @get_physical = get_physical
-      @size_metric = ::Hitimes::ValueMetric.new( 'size' )
-      @time_metric = ::Hitimes::TimedMetric.new( 'time' )
+      @filelist          = filelist
+      @bad_data          = []
+      @good_data         = []
+      @physical_order    = ::MultiRBTree.new
+      @inode_order       = ::MultiRBTree.new
+      @get_physical      = get_physical
+      @size_metric       = ::Hitimes::ValueMetric.new( 'size' )
+      @time_metric       = ::Hitimes::TimedMetric.new( 'time' )
     end
 
     # 
@@ -47,17 +58,20 @@ module Readorder
     #
     def collect_data
       logger.info "Begin data collection"
+      original_order = 0
       @filelist.each_line do |fname|
-
         #logger.debug "  analyzing #{fname.strip}"
-
         @time_metric.measure do
           d = Datum.new( fname )
           d.collect( @get_physical )
+          d.original_order = original_order
           if d.valid? then
+            @good_data << d
             @size_metric.measure d.stat.size
-            key = (@get_physical ? d.first_physical_block_number : d.inode_number)
-            @good_data[key] = d
+            @inode_order[d.inode_number] = d
+            if @get_physical then
+              @physical_order[d.first_physical_block_number] = d
+            end
           else
             @bad_data << d
           end
@@ -66,7 +80,7 @@ module Readorder
         if @time_metric.count % 10_000 == 0 then
           logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec"
         end
-
+        original_order += 1
       end
       logger.info "End data collection" 
       nil
