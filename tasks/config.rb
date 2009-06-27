@@ -101,7 +101,7 @@ Configuration.for('rubyforge') {
   project       "copiousfreetime"
   user          "jjh"
   host          "rubyforge.org"
-  rdoc_location "#{user}@#{host}:/var/www/gforge-projects/copiousfreetime/#{project}/readorder"
+  rdoc_location "#{user}@#{host}:/var/www/gforge-projects/#{project}/readorder"
 }
 
 
