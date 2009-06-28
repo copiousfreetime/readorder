@@ -21,11 +21,15 @@ module Readorder
       end
       
       Readorder.logger.add_appenders( appender )
-      self.level = options['log-level']
+      self.level = options['log-level'] || :info
+    end
+    
+    def self.console
+      Logging.appenders.stderr.level
     end
 
     def self.console=( level )
-      Logging::Appender.stderr.level = level
+      Logging.appenders.stderr.level = level
     end
     
     def self.level
