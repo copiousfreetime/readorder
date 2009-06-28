@@ -89,8 +89,9 @@ files in different orders.
   
 Output a report of the various times take to read the files.
   
-This command requires elevated priveleges to run and will spike the 
-I/O of your machine.  Run with care.
+This command requires elevated priveleges to run.  It will purge your disc
+cache multiple times while running,  and will spike the I/O of your machine.
+Run with care.
 
 ==== Synopsis
 
@@ -107,6 +108,33 @@ I/O of your machine.  Run with care.
   --error-filelist=error-filelist (0 ~> error-filelist) 
       Write all the files from the filelist that had errors to this file 
   --help, -h 
+
+==== Example result
+
+  
+                              Test Using First Of                           
+    ========================================================================
+
+      Total files read :         8052
+      Total bytes read :      6575824
+      Minimum filesize :          637
+      Average filesize :          816.670
+      Maximum filesize :         1393
+      Stddev of sizes  :           86.936
+
+                      read order   Elapsed time (sec)  Read rate (bytes/sec)
+    ------------------------------------------------------------------------
+                  original_order              352.403              18659.944
+                    inode_number               53.606             122669.175
+     first_physical_block_number               47.520             138379.024
+
+This is the output of a a <tt>readorder test</tt> command run on a directory on
+a ReiserFS filesytem containing 805,038 files, constituting 657,543,700 bytes
+of data.  A sample of 1% of the files was used for the test.
+
+If we process them in their original order we can see that this will
+potentially take us 9.78 hours.  If we process them in physical block number
+order that is reduces to 1.31 hours.
 
 == CREDITS
 
