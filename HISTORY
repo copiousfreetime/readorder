@@ -1,4 +1,13 @@
 = Changelog
+
+== Version 2.0.0 - 2009-08-24
+
+=== Enhancements
+
+* complete rewrite of internal file sorting and temporary storage enabling
+  the 'readordering' of large lists of files.
+* switch to amalgalite instead of rbtree for sorting and storage
+
 == Version 1.0.0
 
 * Initial public release
