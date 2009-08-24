@@ -83,7 +83,7 @@ module Readorder
       else
         @error_queue << datum
       end
-      flush_to_disk if ((@valid_queue.size + @error_queue.size) >= @batch_size )
+      flush if ((@valid_queue.size + @error_queue.size) >= @batch_size )
     end
 
     #
@@ -94,7 +94,7 @@ module Readorder
     #
     def flush_valid
       if @valid_queue.size > 0 then
-        logger.info "Flushing #{@valid_queue} valid items to disk"
+        logger.info "Flushing #{@valid_queue.size} valid items to disk"
         sql = <<-insert
         INSERT INTO readorder_valid ( original_order, 
                                       size,
@@ -104,15 +104,17 @@ module Readorder
                                       filename )
         VALUES( ?, ?, ?, ?, ?, ? );
         insert
-        @db.prepare( sql ) do |stmt|
-          until @valid_queue.empty? do
-            datum = @valid_queue.shift
-            stmt.execute( datum.original_order,
-                          datum.size,
-                          datum.inode_number,
-                          datum.first_physical_block_number,
-                          datum.physical_block_count,
-                          datum.filename)
+        @db.transaction do |trans|
+          trans.prepare( sql ) do |stmt|
+            until @valid_queue.empty? do
+              datum = @valid_queue.shift
+              stmt.execute( datum.original_order,
+                            datum.size,
+                            datum.inode_number,
+                            datum.first_physical_block_number,
+                            datum.physical_block_count,
+                            datum.filename)
+            end
           end
         end
       end
@@ -179,16 +181,19 @@ module Readorder
     #
     def flush_error
       if @error_queue.size > 0 then
+        logger.info "Flushing #{@error_queue.size} error items to disk"
         sql = <<-insert
         INSERT INTO readorder_errors ( original_order, filename, error_reason )
         VALUES( ?, ?, ? );
         insert
-        @db.prepare( sql ) do |stmt|
-          until @error_queue.empty? do
-            datum = @error_queue.shift
-            stmt.execute( datum.original_order, 
-                          datum.filename,
-                          datum.error_reason  )
+        @db.transaction do |trans|
+          trans.prepare( sql ) do |stmt|
+            until @error_queue.empty? do
+              datum = @error_queue.shift
+              stmt.execute( datum.original_order, 
+                            datum.filename,
+                            datum.error_reason  )
+            end
           end
         end
       end

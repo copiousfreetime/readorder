@@ -36,6 +36,7 @@ module Readorder
       mixin :argument_filelist
       mixin :option_output
       mixin :option_error_filelist
+      mixin :option_batch_size
 
       run { Cli.run_command_with_params( 'sort', params ) }
     }
@@ -51,6 +52,7 @@ module Readorder
       mixin :argument_filelist
       mixin :option_output
       mixin :option_error_filelist
+      mixin :option_batch_size
 
       option( 'data-csv' ) {
         description "Write the raw data collected to this csv file"
@@ -91,6 +93,7 @@ module Readorder
       mixin :option_output
       mixin :argument_filelist
       mixin :option_error_filelist
+      mixin :option_batch_size
 
       run { Cli.run_command_with_params( 'test', params ) }
     }
@@ -135,6 +138,15 @@ module Readorder
         description "Write all the files from the filelist that had errors to this file"
         argument :required
         validate { |f| File.directory?( File.dirname(File.expand_path( f ) ) ) }
+      end
+    end
+
+    mixin :option_batch_size do
+      option('batch-size' ) do
+        description "The number of files to queue before writing them to the db for storage"
+        argument :required
+        default 10_000
+        cast :integer
       end
     end
   } 

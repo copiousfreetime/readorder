@@ -62,7 +62,7 @@ module Readorder
     end
 
     def results
-      @results ||= Results.new( results_dbfile )
+      @results ||= Results.new( results_dbfile, options['batch-size'] )
     end
 
     def output
