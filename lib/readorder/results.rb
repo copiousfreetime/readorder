@@ -24,7 +24,16 @@ module Readorder
       SQL
     end
 
-    def initialize( filename )
+    #
+    # :call-seq:
+    #   Results.new( filename, 10_000 ) -> results
+    #
+    # Create a new Results object with a batch size.  The batch size is how many
+    # items to queue up to run in a single transaction into the sqlite database.
+    #
+    # By default the batch size is 1 which is not very performant.
+    #   
+    def initialize( filename, batch_size = 1 )
       @db = Amalgalite::Database.new( filename )
 
       unless @db.schema.tables['readorder_valid'] then
@@ -32,10 +41,19 @@ module Readorder
         @db.execute_batch( Results.create_table_sql )
       end
       @db.reload_schema!
+      @batch_size = batch_size
+      @valid_queue = []
+      @error_queue = []
     end
 
     def close
+      flush
       @db.close
+    end
+
+    def flush
+      flush_valid
+      flush_error
     end
 
     def logger
@@ -61,36 +79,43 @@ module Readorder
     #
     def add_datum( datum )
       if datum.valid?
-        add_valid( datum )
+        @valid_queue << datum
       else
-        add_error( datum )
+        @error_queue << datum
       end
+      flush_to_disk if ((@valid_queue.size + @error_queue.size) >= @batch_size )
     end
 
     #
     # :call-seq:
-    #   results.add_valid( datum ) 
+    #   results.flush_valid
     #
-    # Add a valid datum to the valid valid
+    # Flush all the pending valid items to the sqlite database
     #
-    def add_valid( datum )
-      logger.info "Adding datum for #{datum.filename}"
-      sql = <<-insert
-      INSERT INTO readorder_valid ( original_order, 
-                                    size,
-                                    inode_number,
-                                    first_physical_block_number,
-                                    physical_block_count,
-                                    filename )
-      VALUES( ?, ?, ?, ?, ?, ? );
-      insert
-      @db.execute( sql, datum.original_order,
-                        datum.size,
-                        datum.inode_number,
-                        datum.first_physical_block_number,
-                        datum.physical_block_count,
-                        datum.filename
-      )
+    def flush_valid
+      if @valid_queue.size > 0 then
+        logger.info "Flushing #{@valid_queue} valid items to disk"
+        sql = <<-insert
+        INSERT INTO readorder_valid ( original_order, 
+                                      size,
+                                      inode_number,
+                                      first_physical_block_number,
+                                      physical_block_count,
+                                      filename )
+        VALUES( ?, ?, ?, ?, ?, ? );
+        insert
+        @db.prepare( sql ) do |stmt|
+          until @valid_queue.empty? do
+            datum = @valid_queue.shift
+            stmt.execute( datum.original_order,
+                          datum.size,
+                          datum.inode_number,
+                          datum.first_physical_block_number,
+                          datum.physical_block_count,
+                          datum.filename)
+          end
+        end
+      end
     end
 
     #  :call-seq:
@@ -148,19 +173,25 @@ module Readorder
     end
 
     # :call-seq:
-    #   results.add_error( Datum ) -> nil
+    #   results.flush_error
     #
-    # Add a datum that records an error into the results.
+    # Flush all the error items to disk
     #
-    def add_error( datum )
-      sql = <<-insert
-      INSERT INTO readorder_errors ( original_order, filename, error_reason )
-      VALUES( ?, ?, ? );
-      insert
-      @db.execute( sql, datum.original_order, 
-                        datum.filename,
-                        datum.error_reason 
-      )
+    def flush_error
+      if @error_queue.size > 0 then
+        sql = <<-insert
+        INSERT INTO readorder_errors ( original_order, filename, error_reason )
+        VALUES( ?, ?, ? );
+        insert
+        @db.prepare( sql ) do |stmt|
+          until @error_queue.empty? do
+            datum = @error_queue.shift
+            stmt.execute( datum.original_order, 
+                          datum.filename,
+                          datum.error_reason  )
+          end
+        end
+      end
     end
 
     #  :call-seq:
@@ -183,7 +214,6 @@ module Readorder
         yield row
       end
     end
-
 
   end
 end

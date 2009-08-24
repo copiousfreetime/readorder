@@ -78,6 +78,7 @@ module Readorder
         end
         original_order += 1
       end
+      @results.flush
       logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec"
       logger.info "  yielded #{@good_data_count} data points"
       logger.info "End data collection" 
