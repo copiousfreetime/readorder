@@ -47,7 +47,21 @@ module Readorder
     end
 
     def analyzer
-      @analyzer ||= Analyzer.new( filelist, self.get_physical? )
+      @analyzer ||= Analyzer.new( filelist, self.results, self.get_physical? )
+    end
+
+    def results_dbfile
+      if options['output'] then
+        output_dname = File.dirname( options['output'] )
+        output_bname = File.basename( options['output'], '.*' )
+        return File.join( output_dname, "#{output_bname}.db" )
+      else 
+        return ":memory:"
+      end
+    end
+
+    def results
+      @results ||= Results.new( results_dbfile )
     end
 
     def output
@@ -94,23 +108,30 @@ module Readorder
     end 
 
     # called by the Runner if an error is encountered during the run method
-    def error() nil; end
+    def error() 
+      results.close
+    end
 
     # called by runner if a signal is hit
-    def shutdown() nil; end
+    def shutdown() 
+      results.close
+    end
 
     # called by runner when all is done
     def after() 
-      if output != $stdout then
-        output.close
-      end
       if options['error-filelist'] then
-        if analyzer.bad_data.size > 0 then
+        if analyzer.bad_data_count > 0 then
           File.open( options['error-filelist'], "w+" ) do |f|
             analyzer.dump_bad_data_to( f )
           end
           logger.info "wrote error filelist to #{options['error-filelist']}"
         end
+      end
+
+      if output != $stdout then
+        output.close
+        results.close
+        File.ulink( results_dbfile )
       end
     end
 

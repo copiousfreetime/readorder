@@ -1,6 +1,5 @@
-require 'hitimes'
 require 'readorder/datum'
-require 'rbtree'
+require 'readorder/results'
 
 module Readorder
   #
@@ -8,34 +7,27 @@ module Readorder
   # appropriate Datum instances
   #
   class Analyzer
-    # an Array of Datum instances for files that cannot be processed
-    attr_accessor :bad_data
+    # number of bad_data items encountered
+    attr_accessor :bad_data_count
+  
+    # number of good_data items encountered
+    attr_accessor :good_data_count
 
-    # an Array of Datum instances in the order they were processed
-    attr_accessor :good_data
-
-    # an RBTree of Datum instances of those files that were analyzed
-    # in order by phyiscal disc block number.  This only has items if 
-    # the physical block number was obtained.  It is empty otherwise
-    attr_accessor :physical_order
-
-    # an RBTree of Datum instances of those files that were analyzed
-    # in order by inode
-    attr_accessor :inode_order
+    # The Results handler
+    attr_accessor :results
 
     #
     # Initialize the Analyzer with the Filelist object and whether or
     # not to gather the physical block size.
     #
-    def initialize( filelist, get_physical = true )
+    def initialize( filelist, results, get_physical = true )
       @filelist          = filelist
-      @bad_data          = []
-      @good_data         = []
-      @physical_order    = ::MultiRBTree.new
-      @inode_order       = ::MultiRBTree.new
       @get_physical      = get_physical
       @size_metric       = ::Hitimes::ValueMetric.new( 'size' )
       @time_metric       = ::Hitimes::TimedMetric.new( 'time' )
+      @results           = results
+      @bad_data_count    = 0
+      @good_data_count   = 0
     end
 
     # 
@@ -60,30 +52,30 @@ module Readorder
       logger.info "Begin data collection"
       original_order = 0
       @filelist.each_line do |fname|
-        #logger.debug "  analyzing #{fname.strip}"
+        logger.debug "  analyzing #{fname.strip}"
         @time_metric.measure do
           d = Datum.new( fname )
           d.collect( @get_physical )
           d.original_order = original_order
+
+          @results.add_datum( d )
+
           if d.valid? then
-            @good_data << d
             @size_metric.measure d.stat.size
-            @inode_order[d.inode_number] = d
-            if @get_physical then
-              @physical_order[d.first_physical_block_number] = d
-            end
+            @good_data_count += 1
           else
-            @bad_data << d
+            @bad_data_count += 1
           end
         end
 
         if @time_metric.count % 10_000 == 0 then
-          logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec"
+          logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec ( #{@good_data_count} good, #{@bad_data_count} bad )"
         end
         original_order += 1
+
       end
       logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec"
-      logger.info "  yielded #{@good_data.size} data points"
+      logger.info "  yielded #{@good_data_count} data points"
       logger.info "End data collection" 
       nil
     end
@@ -112,30 +104,30 @@ module Readorder
       s.puts "Files analyzed   : #{"%12d" % @time_metric.count}"
       s.puts "Elapsed time     : #{"%12d" % @time_metric.duration} seconds"
       s.puts "Collection Rate  : #{"%16.3f" % @time_metric.rate} files/sec"
-      s.puts "Good files       : #{"%12d" % @good_data.size}"
+      s.puts "Good files       : #{"%12d" % @good_data_count}"
       s.puts "  average size   : #{"%16.3f" % @size_metric.mean} bytes"
       s.puts "  minimum size   : #{"%16.3f" % @size_metric.min} bytes"
       s.puts "  maximum size   : #{"%16.3f" % @size_metric.max} bytes"
       s.puts "  sum of sizes   : #{"%12d" % @size_metric.sum} bytes"
-      s.puts "Bad files        : #{"%12d" % @bad_data.size}"
+      s.puts "Bad files        : #{"%12d" % @bad_data_count}"
       return s.string
     end
 
     #
     # call-seq:
-    #   analyzer.dump_data_to( IO ) -> nil
+    #   analyzer.dump_errors_to( IO ) -> nil
     #
     # write a csv to the _IO_ object passed in.  The format is:
     #
-    #   error reason,filename
+    #   error_reason,filename
     #
     # If there are no bad Datum instances then do not write anything.
     #
-    def dump_bad_data_to( io )
-      if bad_data.size > 0 then
+    def dump_errors_to( io )
+      if results.error_count > 0 then
         io.puts "error_reason,filename"
-        bad_data.each do |d|
-          io.puts "#{d.error_reason},#{d.filename}"
+        results.each_error do |d|
+          io.puts "#{d['error_reason']},#{d['filename']}"
         end
       end
       nil
@@ -144,7 +136,7 @@ module Readorder
 
     # 
     # call-seq:
-    #   analyzer.dump_good_data_to( IO ) -> nil
+    #   analyzer.dump_valid_to( IO ) -> nil
     #
     # Write a csv fo the _IO_ object passed in.  The format is:
     #
@@ -153,17 +145,18 @@ module Readorder
     # The last two fields *physical_block_count* and *first_physical_block_number* are
     # only written if the analyzer was able to gather physical block information
     #
-    def dump_good_data_to( io )
+    def dump_valid_to( io )
       fields = %w[ filename size inode_number ]
+      by_field = 'inode_number'
       if @get_physical then
         fields << 'physical_block_count'
         fields << 'first_physical_block_number'
+        by_field = 'first_physical_block_number'
       end
-
       io.puts fields.join(",")
-      good_data.each do |d|
-        f = fields.collect { |f| d.send( f ) }
-        io.puts f.join(",")
+      results.each_valid_by_field( by_field ) do |d|
+       f = fields.collect { |f| d[f] }
+       io.puts f.join(",")
       end
     end
   end

@@ -16,6 +16,13 @@ end
 
 require 'rubygems'
 require 'logging'
+
+# require amalgalite explicitly  before hitimes explicitly because of 
+# using flat namespace on OSX
+# http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/344658
+require 'amalgalite'
+require 'hitimes'
+
 require 'readorder/version'
 require 'readorder/paths'
 require 'readorder/cli'

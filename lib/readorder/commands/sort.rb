@@ -7,19 +7,23 @@ module Readorder
     #
     class Sort < ::Readorder::Command
       def run
+
         analyzer.collect_data
         analyzer.log_summary_report
-        data = nil
+
+        filenames = nil
         if get_physical? then
           logger.info "using physical order"
-          data = analyzer.physical_order
+          filenames = analyzer.filenames_by_physical_order
         else
           logger.info "using inode order"
-          data = analyzer.inode_order
+          filenames = analyzer.filenames_by_inode_order
         end
-        data.values.each do |d|
-          output.puts d.filename
+
+        filenames.each do |fname|
+          output.puts fname
         end
+
       end
     end
   end

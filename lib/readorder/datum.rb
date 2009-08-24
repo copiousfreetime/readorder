@@ -49,6 +49,7 @@ module Readorder
       @physical_block_count = 0
       @error_reason = nil
       @original_order = 0
+      @size = 0
       
       @stat = nil
       @valid = false
@@ -57,12 +58,25 @@ module Readorder
 
     #
     # call-seq:
+    #   datum.to_csv
+    #
+    # return the datum as a CSV in the format:
+    #
+    #   physical_id,inode_id,filename
+    #
+    def to_csv
+      "#{first_physical_block_number},#{inode_number},#{filename}"
+    end
+
+
+    #
+    # call-seq:
     #   datum.size -> Integer
     #
     # The number of bytes the file consumes
     #
     def size
-      @stat.size
+      @size ||= @stat.size
     end
 
     #
