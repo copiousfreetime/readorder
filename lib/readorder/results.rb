@@ -27,7 +27,7 @@ module Readorder
     def initialize( filename )
       @db = Amalgalite::Database.new( filename )
 
-      unless @db.schema.tables['readorder_results'] then
+      unless @db.schema.tables['readorder_valid'] then
         logger.info "Creating tables"
         @db.execute_batch( Results.create_table_sql )
       end
@@ -40,6 +40,16 @@ module Readorder
 
     def logger
       Logging::Logger[ self ]
+    end
+
+    #
+    # :call-seq:
+    #   results.has_datum_for_filename?( filename )
+    #
+    # return true or false if the give filename is alread in the database
+    #
+    def has_datum_for_filename?( filename )
+      @db.first_value_from( "SELECT filename FROM readorder_valid WHERE filename = ?", filename )
     end
 
     #
@@ -74,7 +84,6 @@ module Readorder
                                     filename )
       VALUES( ?, ?, ?, ?, ?, ? );
       insert
-
       @db.execute( sql, datum.original_order,
                         datum.size,
                         datum.inode_number,

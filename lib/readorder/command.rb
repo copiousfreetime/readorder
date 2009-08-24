@@ -32,6 +32,7 @@ module Readorder
       @filelist = nil
       @analyzer = nil
       @output = nil
+      @delete_results = true
     end
 
     def filelist
@@ -115,6 +116,7 @@ module Readorder
     # called by runner if a signal is hit
     def shutdown() 
       results.close
+      @delete_results = false
     end
 
     # called by runner when all is done
@@ -122,7 +124,7 @@ module Readorder
       if options['error-filelist'] then
         if analyzer.bad_data_count > 0 then
           File.open( options['error-filelist'], "w+" ) do |f|
-            analyzer.dump_bad_data_to( f )
+            analyzer.dump_errors_to( f )
           end
           logger.info "wrote error filelist to #{options['error-filelist']}"
         end
@@ -130,8 +132,8 @@ module Readorder
 
       if output != $stdout then
         output.close
-        results.close
-        File.ulink( results_dbfile )
+        results.close 
+        File.unlink( results_dbfile ) if @delete_results
       end
     end
 

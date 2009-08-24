@@ -11,19 +11,18 @@ module Readorder
         analyzer.collect_data
         analyzer.log_summary_report
 
-        filenames = nil
+        field = nil
         if get_physical? then
-          logger.info "using physical order"
-          filenames = analyzer.filenames_by_physical_order
+          logger.info "using first physical block number order"
+          field = 'first_physical_block_number'
         else
-          logger.info "using inode order"
-          filenames = analyzer.filenames_by_inode_order
+          logger.info "using inode number order"
+          field = 'inode_number'
         end
 
-        filenames.each do |fname|
-          output.puts fname
+        analyzer.results.each_valid_by_field( field ) do |row|
+          output.puts row['filename']
         end
-
       end
     end
   end

@@ -52,19 +52,24 @@ module Readorder
       logger.info "Begin data collection"
       original_order = 0
       @filelist.each_line do |fname|
+        next if @results.has_datum_for_filename?( fname )
         logger.debug "  analyzing #{fname.strip}"
         @time_metric.measure do
           d = Datum.new( fname )
-          d.collect( @get_physical )
-          d.original_order = original_order
+          begin
+            d.collect( @get_physical )
+            d.original_order = original_order
 
-          @results.add_datum( d )
+            @results.add_datum( d )
 
-          if d.valid? then
-            @size_metric.measure d.stat.size
-            @good_data_count += 1
-          else
-            @bad_data_count += 1
+            if d.valid? then
+              @size_metric.measure d.stat.size
+              @good_data_count += 1
+            else
+              @bad_data_count += 1
+            end
+          rescue => e
+            logger.error "#{e} : #{d.to_hash.inspect}"
           end
         end
 
@@ -72,7 +77,6 @@ module Readorder
           logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec ( #{@good_data_count} good, #{@bad_data_count} bad )"
         end
         original_order += 1
-
       end
       logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec"
       logger.info "  yielded #{@good_data_count} data points"

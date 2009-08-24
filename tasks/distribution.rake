@@ -18,7 +18,7 @@ if pkg_config = Configuration.for_if_exist?("packaging") then
 
     desc "Install as a gem"
     task :install => [:clobber, :package] do
-      sh "sudo gem install pkg/#{Readorder::GEM_SPEC.full_name}.gem"
+      sh "sudo gem install pkg/#{Readorder::GEM_SPEC.full_name}.gem --no-rdoc --no-ri --ignore-dependencies --local"
     end
 
     desc "Uninstall gem"

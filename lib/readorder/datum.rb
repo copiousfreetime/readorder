@@ -36,6 +36,10 @@ module Readorder
       @is_linux ||= ::Config::CONFIG['host_os'] =~ /linux/i
     end
 
+    def self.hash_keys
+      %w[ filename inode_number first_physical_block_number original_order size ]
+    end
+
     #
     # call-seq:
     #   Datum.new( filename ) -> Datum
@@ -68,6 +72,19 @@ module Readorder
       "#{first_physical_block_number},#{inode_number},#{filename}"
     end
 
+    #
+    # :call-seq;
+    #   datum.to_hash -> Hash
+    #
+    # return all the tiems in the datum as a hash
+    #
+    def to_hash
+      h = {}
+      Datum.hash_keys.each do |k|
+        h[k] = self.send( k )
+      end
+      return h
+    end
 
     #
     # call-seq:
