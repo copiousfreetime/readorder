@@ -51,9 +51,11 @@ module Readorder
     def collect_data
       logger.info "Begin data collection"
       original_order = 0
+      skipped = 0
       @filelist.each_line do |fname|
-        unless @results.has_datum_for_filename?( fname ) then
-          logger.debug "  analyzing #{fname.strip}"
+        fname.strip!
+        if not @results.has_datum_for_filename?( fname ) then
+          logger.debug "  analyzing #{fname}"
           @time_metric.measure do
             d = Datum.new( fname )
             begin
@@ -72,10 +74,12 @@ module Readorder
               logger.error "#{e} : #{d.to_hash.inspect}"
             end
           end
+        else
+          skipped += 1
         end
 
         if @time_metric.count % 10_000 == 0 then
-          logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec ( #{@good_data_count} good, #{@bad_data_count} bad )"
+          logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec ( #{@good_data_count} good, #{@bad_data_count} bad, #{skipped} skipped )"
         end
         original_order += 1
       end
