@@ -53,10 +53,11 @@ module Readorder
       original_order = 0
       skipped = 0
       @filelist.each_line do |fname|
-        fname.strip!
-        if not @results.has_datum_for_filename?( fname ) then
-          logger.debug "  analyzing #{fname}"
-          @time_metric.measure do
+
+        @time_metric.measure do
+          fname.strip!
+          if not @results.has_datum_for_filename?( fname ) then
+            logger.debug "  analyzing #{fname}"
             d = Datum.new( fname )
             begin
               d.collect( @get_physical )
@@ -73,9 +74,9 @@ module Readorder
             rescue => e
               logger.error "#{e} : #{d.to_hash.inspect}"
             end
+          else
+            skipped += 1
           end
-        else
-          skipped += 1
         end
 
         if @time_metric.count % 10_000 == 0 then
