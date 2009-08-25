@@ -52,24 +52,25 @@ module Readorder
       logger.info "Begin data collection"
       original_order = 0
       @filelist.each_line do |fname|
-        next if @results.has_datum_for_filename?( fname )
-        logger.debug "  analyzing #{fname.strip}"
-        @time_metric.measure do
-          d = Datum.new( fname )
-          begin
-            d.collect( @get_physical )
-            d.original_order = original_order
+        unless @results.has_datum_for_filename?( fname ) then
+          logger.debug "  analyzing #{fname.strip}"
+          @time_metric.measure do
+            d = Datum.new( fname )
+            begin
+              d.collect( @get_physical )
+              d.original_order = original_order
 
-            @results.add_datum( d )
+              @results.add_datum( d )
 
-            if d.valid? then
-              @size_metric.measure d.stat.size
-              @good_data_count += 1
-            else
-              @bad_data_count += 1
+              if d.valid? then
+                @size_metric.measure d.stat.size
+                @good_data_count += 1
+              else
+                @bad_data_count += 1
+              end
+            rescue => e
+              logger.error "#{e} : #{d.to_hash.inspect}"
             end
-          rescue => e
-            logger.error "#{e} : #{d.to_hash.inspect}"
           end
         end
 
