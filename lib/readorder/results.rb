@@ -4,21 +4,24 @@ module Readorder
   # Results persists the results from a readorder run
   # The results are persisted in an SQlite3 database which allows for ordering
   # the results by whatever means are wanted.
+  #
   class Results
     def self.create_table_sql
+
+      # No indexes are created until the data is ready to be processed.
       sql = <<-SQL
         CREATE TABLE readorder_valid ( 
            original_order              INTEGER PRIMARY KEY NOT NULL,
            size                        INTEGER NOT NULL,
-           inode_number                INTEGER NOT NULL UNIQUE,
-           first_physical_block_number INTEGER UNIQUE,
+           inode_number                INTEGER NOT NULL,
+           first_physical_block_number INTEGER,
            physical_block_count        INTEGER,
-           filename                    TEXT    NOT NULL UNIQUE
+           filename                    TEXT NOT NULL
         );
 
         CREATE TABLE readorder_errors (
            original_order              INTEGER PRIMARY KEY NOT NULL,
-           filename                    TEXT NOT NULL UNIQUE,
+           filename                    TEXT NOT NULL,
            error_reason                TEXT NOT NULL
         );
       SQL
@@ -169,6 +172,7 @@ module Readorder
     #   results.each_valid_by_field( field ) { |v| ... }
     #
     def each_valid_by_field( field, &block )
+      prep_for_each( field )
       @db.execute( "SELECT * from readorder_valid ORDER BY #{field} ASC" ) do |row|
         yield row
       end
@@ -220,5 +224,19 @@ module Readorder
       end
     end
 
+    private
+
+    # 
+    # create an index on the field in question so it is fast to iterate over it
+    #
+    def prep_for_each( field )
+      idx_name = "#{field}_idx"
+      unless  @db.schema.tables['readorder_valid'].indexes[idx_name] then
+        logger.info "create index #{idx_name}"
+        @db.execute( "CREATE INDEX #{idx_name} ON readorder_valid( #{field} )" )
+        logger.info "finished index #{idx_name}"
+        @db.reload_schema!
+      end
+    end
   end
 end
