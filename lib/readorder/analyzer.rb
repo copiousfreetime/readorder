@@ -51,36 +51,31 @@ module Readorder
     def collect_data
       logger.info "Begin data collection"
       original_order = 0
-      skipped = 0
       @filelist.each_line do |fname|
 
         @time_metric.measure do
           fname.strip!
-          if not @results.has_datum_for_filename?( fname ) then
-            logger.debug "  analyzing #{fname}"
-            d = Datum.new( fname )
-            begin
-              d.collect( @get_physical )
-              d.original_order = original_order
+          logger.debug "  analyzing #{fname}"
+          d = Datum.new( fname )
+          begin
+            d.collect( @get_physical )
+            d.original_order = original_order
 
-              @results.add_datum( d )
+            @results.add_datum( d )
 
-              if d.valid? then
-                @size_metric.measure d.stat.size
-                @good_data_count += 1
-              else
-                @bad_data_count += 1
-              end
-            rescue => e
-              logger.error "#{e} : #{d.to_hash.inspect}"
+            if d.valid? then
+              @size_metric.measure d.stat.size
+              @good_data_count += 1
+            else
+              @bad_data_count += 1
             end
-          else
-            skipped += 1
+          rescue => e
+            logger.error "#{e} : #{d.to_hash.inspect}"
           end
         end
 
         if @time_metric.count % 10_000 == 0 then
-          logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec ( #{@good_data_count} good, #{@bad_data_count} bad, #{skipped} skipped )"
+          logger.info "  processed #{@time_metric.count} at #{"%0.3f" % @time_metric.rate} files/sec ( #{@good_data_count} good, #{@bad_data_count} bad )"
         end
         original_order += 1
       end
